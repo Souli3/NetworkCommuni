@@ -14,6 +14,7 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
       if (!socket || !me) return;
 
       const fileId = `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const mimeType = file.type || "application/octet-stream";
 
       setUploads((prev) => [
         ...prev,
@@ -29,11 +30,11 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
           const chunk = file.slice(start, end);
 
           const formData = new FormData();
-          formData.append("chunk", chunk);
+          formData.append("chunk", new Blob([chunk], { type: mimeType }), "chunk");
           formData.append("fileId", fileId);
           formData.append("fileName", file.name);
           formData.append("fileSize", String(file.size));
-          formData.append("mimeType", file.type || "application/octet-stream");
+          formData.append("mimeType", mimeType);
           formData.append("chunkIndex", String(i));
           formData.append("totalChunks", String(totalChunks));
           formData.append("senderId", me.id);
@@ -43,7 +44,11 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
             body: formData,
           });
 
-          if (!res.ok) throw new Error("Upload failed");
+          if (!res.ok) {
+            const err = await res.text();
+            console.error("Upload chunk error:", res.status, err);
+            throw new Error(`Upload failed: ${res.status}`);
+          }
 
           const progress = ((i + 1) / totalChunks) * 100;
           setUploads((prev) =>
@@ -57,11 +62,11 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
           )
         );
 
-        // Remove from active uploads after a delay
         setTimeout(() => {
           setUploads((prev) => prev.filter((u) => u.fileId !== fileId));
         }, 2000);
-      } catch {
+      } catch (err) {
+        console.error("Upload failed:", err);
         setUploads((prev) =>
           prev.map((u) =>
             u.fileId === fileId ? { ...u, status: "error" } : u
