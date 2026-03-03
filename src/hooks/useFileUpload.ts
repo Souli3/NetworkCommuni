@@ -28,9 +28,10 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
           const start = i * CHUNK_SIZE;
           const end = Math.min(start + CHUNK_SIZE, file.size);
           const chunk = file.slice(start, end);
+          const arrayBuffer = await chunk.arrayBuffer();
 
           const formData = new FormData();
-          formData.append("chunk", new Blob([chunk], { type: mimeType }), "chunk");
+          formData.append("chunk", new File([arrayBuffer], "chunk", { type: "application/octet-stream" }));
           formData.append("fileId", fileId);
           formData.append("fileName", file.name);
           formData.append("fileSize", String(file.size));
@@ -45,9 +46,9 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
           });
 
           if (!res.ok) {
-            const err = await res.text();
-            console.error("Upload chunk error:", res.status, err);
-            throw new Error(`Upload failed: ${res.status}`);
+            const errText = await res.text();
+            console.error(`Upload chunk ${i} error:`, res.status, errText);
+            throw new Error(`Chunk ${i}: ${res.status}`);
           }
 
           const progress = ((i + 1) / totalChunks) * 100;
@@ -69,9 +70,15 @@ export function useFileUpload(socket: Socket | null, me: Device | null) {
         console.error("Upload failed:", err);
         setUploads((prev) =>
           prev.map((u) =>
-            u.fileId === fileId ? { ...u, status: "error" } : u
+            u.fileId === fileId
+              ? { ...u, status: "error" }
+              : u
           )
         );
+        // Remove error after 5s
+        setTimeout(() => {
+          setUploads((prev) => prev.filter((u) => u.fileId !== fileId));
+        }, 5000);
       }
     },
     [socket, me]

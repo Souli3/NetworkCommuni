@@ -45,20 +45,30 @@ export function MessageFeed({ messages, me, uploads }: MessageFeedProps) {
 
       {/* Active uploads */}
       {uploads
-        .filter((u) => u.status === "uploading")
+        .filter((u) => u.status === "uploading" || u.status === "error")
         .map((u) => (
           <div key={u.fileId} className="file-card is-mine">
             <div className="file-card-body">
-              <span className="file-icon">&#128228;</span>
+              <span className="file-icon">
+                {u.status === "error" ? "\u274C" : "\u{1F4E4}"}
+              </span>
               <div className="file-details">
                 <div className="file-name">{u.fileName}</div>
-                <div className="upload-progress-bar">
-                  <div
-                    className="upload-progress-fill"
-                    style={{ width: `${u.progress}%` }}
-                  />
-                </div>
-                <div className="upload-progress-text">{Math.round(u.progress)}%</div>
+                {u.status === "error" ? (
+                  <div className="upload-progress-text" style={{ color: "var(--error)" }}>
+                    Échec de l&apos;envoi
+                  </div>
+                ) : (
+                  <>
+                    <div className="upload-progress-bar">
+                      <div
+                        className="upload-progress-fill"
+                        style={{ width: `${u.progress}%` }}
+                      />
+                    </div>
+                    <div className="upload-progress-text">{Math.round(u.progress)}%</div>
+                  </>
+                )}
               </div>
             </div>
           </div>
