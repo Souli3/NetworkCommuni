@@ -11,13 +11,15 @@ interface InitPayload {
   messages: ChatMessage[];
   localIP: string;
   port: number;
+  hostname: string;
 }
 
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
   const [me, setMe] = useState<Device | null>(null);
   const [localIP, setLocalIP] = useState("");
-  const [port, setPort] = useState(3003);
+  const [port, setPort] = useState(3000);
+  const [hostname, setHostname] = useState("");
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export function useSocket() {
       setMe(payload.device);
       setLocalIP(payload.localIP);
       setPort(payload.port);
+      setHostname(payload.hostname);
     });
 
     return () => {
@@ -45,6 +48,7 @@ export function useSocket() {
     me,
     localIP,
     port,
+    hostname,
     connected,
   };
 }

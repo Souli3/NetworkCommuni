@@ -36,10 +36,7 @@ export function FileCard({ message, me }: FileCardProps) {
   const info = message.fileInfo!;
 
   const download = () => {
-    const a = document.createElement("a");
-    a.href = `/api/download/${info.fileId}`;
-    a.download = info.fileName;
-    a.click();
+    window.open(`/api/download/${encodeURIComponent(info.fileId)}`, "_blank");
   };
 
   return (

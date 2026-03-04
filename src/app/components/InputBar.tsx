@@ -7,10 +7,10 @@ import type { Device } from "@/types";
 interface InputBarProps {
   socket: Socket | null;
   me: Device | null;
-  onFileSelect: (file: File) => void;
+  onFilesSelect: (files: FileList | File[]) => void;
 }
 
-export function InputBar({ socket, me, onFileSelect }: InputBarProps) {
+export function InputBar({ socket, me, onFilesSelect }: InputBarProps) {
   const [text, setText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,14 +30,16 @@ export function InputBar({ socket, me, onFileSelect }: InputBarProps) {
         socket.emit("clipboard:share", { content });
       }
     } catch {
-      alert("Impossible de lire le presse-papiers. Vérifiez les permissions du navigateur.");
+      alert(
+        "Impossible de lire le presse-papiers. Vérifiez les permissions du navigateur."
+      );
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      onFilesSelect(files);
       e.target.value = "";
     }
   };
@@ -63,13 +65,14 @@ export function InputBar({ socket, me, onFileSelect }: InputBarProps) {
         type="button"
         className="input-btn"
         onClick={() => fileInputRef.current?.click()}
-        title="Envoyer un fichier"
+        title="Envoyer des fichiers"
       >
         &#128206;
       </button>
       <input
         ref={fileInputRef}
         type="file"
+        multiple
         onChange={handleFileChange}
       />
       <button type="submit" className="input-btn send-btn" title="Envoyer">

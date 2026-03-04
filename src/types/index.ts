@@ -21,11 +21,16 @@ export interface FileInfo {
   mimeType: string;
 }
 
-export interface UploadProgress {
-  fileId: string;
+export interface FileTransfer {
+  id: string;
   fileName: string;
-  progress: number; // 0-100
-  status: "uploading" | "done" | "error";
+  fileSize: number;
+  status: "queued" | "uploading" | "done" | "error" | "cancelled";
+  progress: number;
+  speed: number;
+  eta: number;
+  uploadedBytes: number;
+  error?: string;
 }
 
 export interface ServerState {

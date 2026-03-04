@@ -12,10 +12,8 @@ export function useMessages(socket: Socket | null) {
     if (!socket) return;
 
     const onInit = (payload: { messages: ChatMessage[] }) => {
-      if (!initialized.current) {
-        setMessages(payload.messages);
-        initialized.current = true;
-      }
+      setMessages(payload.messages);
+      initialized.current = true;
     };
 
     const onNewMessage = (msg: ChatMessage) => {

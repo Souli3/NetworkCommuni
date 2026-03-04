@@ -1,48 +1,61 @@
 "use client";
 
-import { useState, useCallback, type DragEvent } from "react";
+import { useState, useCallback, useRef, type DragEvent } from "react";
 import { useSocket } from "@/hooks/useSocket";
 import { useMessages } from "@/hooks/useMessages";
 import { useDevices } from "@/hooks/useDevices";
-import { useFileUpload } from "@/hooks/useFileUpload";
+import { useFileTransfer } from "@/hooks/useFileTransfer";
 import { Sidebar } from "./Sidebar";
 import { MessageFeed } from "./MessageFeed";
 import { InputBar } from "./InputBar";
+import { FileTransferManager } from "./FileTransferManager";
 
 export function ChatApp() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const { socket, me, localIP, port, connected } = useSocket();
+  const dragCounterRef = useRef(0);
+  const { socket, me, localIP, port, hostname, connected } = useSocket();
   const { messages } = useMessages(socket);
   const { devices } = useDevices(socket);
-  const { uploads, uploadFile } = useFileUpload(socket, me);
+  const {
+    transfers,
+    addFiles,
+    cancelTransfer,
+    cancelAll,
+    clearCompleted,
+    retryTransfer,
+  } = useFileTransfer(me);
+
+  const handleDragEnter = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) setDragging(true);
+  }, []);
 
   const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.currentTarget === e.target) {
-      setDragging(false);
-    }
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) setDragging(false);
   }, []);
 
   const handleDrop = useCallback(
     (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      dragCounterRef.current = 0;
       setDragging(false);
-
-      const files = e.dataTransfer.files;
-      for (let i = 0; i < files.length; i++) {
-        uploadFile(files[i]);
+      if (e.dataTransfer.files.length > 0) {
+        addFiles(e.dataTransfer.files);
       }
     },
-    [uploadFile]
+    [addFiles]
   );
 
   return (
@@ -54,6 +67,7 @@ export function ChatApp() {
       <Sidebar
         localIP={localIP}
         port={port}
+        hostname={hostname}
         devices={devices}
         me={me}
         open={sidebarOpen}
@@ -61,6 +75,7 @@ export function ChatApp() {
       />
       <div
         className="main-area"
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -83,8 +98,15 @@ export function ChatApp() {
             </div>
           </div>
         )}
-        <MessageFeed messages={messages} me={me} uploads={uploads} />
-        <InputBar socket={socket} me={me} onFileSelect={uploadFile} />
+        <MessageFeed messages={messages} me={me} />
+        <FileTransferManager
+          transfers={transfers}
+          onCancel={cancelTransfer}
+          onRetry={retryTransfer}
+          onClearCompleted={clearCompleted}
+          onCancelAll={cancelAll}
+        />
+        <InputBar socket={socket} me={me} onFilesSelect={addFiles} />
       </div>
     </div>
   );
